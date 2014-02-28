@@ -1,11 +1,13 @@
 <?php
-namespace AllPlayers;
+namespace AllPlayers\V1;
 
 use AllPlayers\Service\UserService;
 use AllPlayers\Service\GroupService;
 
 use AllPlayers\Component\HttpClient;
-use Guzzle\Plugin\Log\LogPlugin;
+
+use Guzzle\Http\Plugin\CookiePlugin;
+use Guzzle\Http\Plugin\LogPlugin;
 
 use ErrorException;
 
@@ -17,9 +19,9 @@ class Client extends HttpClient
     /**
      * {@inheritdoc}
      */
-    public function __construct($base_url, LogPlugin $log_plugin = null)
+    public function __construct($base_url, LogPlugin $log_plugin = null, $cookie_plugin = null)
     {
-        parent::__construct("$base_url/api/v1/rest", $log_plugin);
+        parent::__construct("$base_url/api/v1/rest", $log_plugin, $cookie_plugin);
     }
 
     /**
@@ -650,7 +652,7 @@ class Client extends HttpClient
             $path .= "/$user_uuid";
         }
 
-        return $this->index($path);
+        return (array) $this->index($path);
     }
 
     /**
@@ -1156,18 +1158,31 @@ class Client extends HttpClient
     }
 
     /**
-     * Fetch theme HTML from webapp.
+     * Fetch HTML information from webapp.
      *
      * @param string $section
-     *   The theme section to retrieve.
+     *   The section of HTML to retrieve (header or footer).
      *
-     * @return stdClass
-     *   Theme information for the requested section with the following
-     *   properties:
-     *   - html: HTML code for the theme section.
+     * @return string
+     *   HTML code for the header.
      */
     public function themeGetHtml($section = 'header')
     {
-        return $this->get("theme/$section");
+        // Check the cache if it is the footer.
+        if ($section == 'footer') {
+            $cache = cache_get('theme-footer');
+            if (!empty($cache)) {
+                return $cache->data;
+            }
+        }
+
+        // Get the HTML.
+        $html = $this->get("theme/$section");
+
+        // If it is the footer, save to cache.
+        if ($section == 'footer') {
+            cache_set('theme-footer', $html, 'cache', CACHE_TEMPORARY);
+        }
+        return $html;
     }
 }
