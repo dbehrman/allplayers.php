@@ -125,4 +125,25 @@ class Client extends HttpClient
             $pagesize
         );
     }
+
+    /**
+     * @param string $order
+     *   The UUID of an order or 'search' to use the query.
+     * @param array $query
+     *   (Optional) Contains search criteria for orders to cancel.
+     *   - user_uuid: (Required) the uuid of the user that orders are made for.
+     *   - group_uuid: The group that the orders belong to.
+     *   - role_uuid: The role that orders belong to.
+     *
+     * @return boolean
+     *   Whether the orders were cancelled.
+     */
+    public function deleteOrder($order, $query = array())
+    {
+        $result = $this->delete(
+            'order/' . $order,
+            $query
+        );
+        return $result['status'] === 'success';
+    }
 }
